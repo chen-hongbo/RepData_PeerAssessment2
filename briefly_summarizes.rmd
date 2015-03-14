@@ -1,0 +1,49 @@
+---
+title: "briefly summarizes"
+output: html_document
+---
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+#Data Processing :# 
+
+```{r cache=TRUE}    
+    library(plyr)
+    Sys.setlocale("LC_ALL", "English")
+    data_set <- read.csv("repdata_data_StormData.csv.bz2")
+    prop_weight <- data.frame(PROPDMGEXP=c("K","M","B"),PROPWEIGHT=c(1000,1000000,1000000000))
+    crop_weight <- data.frame(CROPDMGEXP=c("K","M","B"),CROPWEIGHT=c(1000,1000000,1000000000))
+    ansy_data <- subset(data_set,select=c("STATE","BGN_DATE","EVTYPE","FATALITIES","INJURIES","PROPDMG","PROPDMGEXP","CROPDMG","CROPDMGEXP"))
+    ansy_data$BGN_DATE <- substr(as.character(data_set$BGN_DATE),nchar(as.character(data_set$BGN_DATE))-11,nchar(as.character(data_set$BGN_DATE))-8)
+    ansy_data <- merge(ansy_data,prop_weight,by="PROPDMGEXP")
+    ansy_data <- merge(ansy_data,crop_weight,by="CROPDMGEXP")
+    ansy_data$PROPDMG <- ansy_data$PROPDMG*ansy_data$PROPWEIGHT
+    ansy_data$CROPDMG <- ansy_data$CROPDMG*ansy_data$CROPWEIGHT
+    resu_data <- ddply(ansy_data,.(BGN_DATE,EVTYPE),summarize,casualties=sum(FATALITIES)+sum(INJURIES),economic_losses=sum(PROPDMG)+sum(CROPDMG))
+```
+
+#synopsis:#
+
+        1.From 1995 to 2011 in America appear casualties event storm and 64 species, of which the top five for the TORNADO, FLOOD, ICE STORM, THUNDERSTORM WIND and HEAT;
+        2.From 1995 to 2011 in America impact on the economy of 120 species, of which the top five are FLOOD, HURRICANE/TYPHOON, TORNADO, HURRICANE and RIVER FLOOD.
+
+
+#result:#
+
+```{r, echo=TRUE}
+    library(plyr)
+    library(lattice)
+    casualties_resu_data <- ddply(resu_data,.(EVTYPE),summarize,casualties=sum(casualties))
+    casualties_resu_data <- casualties_resu_data[(order(casualties_resu_data$casualties,decreasing=TRUE)),] 
+    barchart(EVTYPE~casualties,data=subset(casualties_resu_data[1:10,]),col="blue",main="Summary of Casualties")
+
+    economic_losses_resu_data <- ddply(resu_data,.(EVTYPE),summarize,economic_losses=sum(economic_losses))
+    economic_losses_resu_data <- economic_losses_resu_data[(order(economic_losses_resu_data$economic_losses,decreasing=TRUE)),]
+    barchart(EVTYPE~economic_losses,data=subset(economic_losses_resu_data[1:10,]),col="blue",main="Summary of Economic_Losses")
+
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
